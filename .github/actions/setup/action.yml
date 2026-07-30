@@ -1,0 +1,23 @@
+name: Setup Superset
+description: It will setup the current personalization inside Superset
+
+outputs:
+  working-directory:
+    description: 'The working directory where Superset is setup'
+    value: ${{ steps.install.outputs.WORKING_DIRECTORY }}
+  superset-version:
+    description: 'The version of Superset that is setup'
+    value: ${{ steps.install.outputs.SUPERSET_VERSION }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with:
+        node-version: 20.18.0
+    - name: install
+      shell: bash
+      run: |
+        echo TODO
+        echo "SUPERSET_VERSION=TODO" >> $GITHUB_OUTPUT
+        echo "WORKING_DIRECTORY=$(pwd)" >> $GITHUB_OUTPUT
