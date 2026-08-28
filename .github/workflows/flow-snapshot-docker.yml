@@ -17,31 +17,43 @@ env:
   CURRENT_BRANCH: ${{ github.event.inputs.branch || github.ref_name }}
 
 jobs:
-  checkout:
-    name: 🔖 Checkout Repository and Setup
+  docker-build:
+    name: 📦 Docker Build and Push
     runs-on: ubuntu-22.04
-    outputs:
-      working-directory: ${{ steps.setup.outputs.working-directory }}
+    if: ${{ github.event_name == 'push' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
         with:
           ref: ${{ env.CURRENT_BRANCH }}
 
-      - id: setup
+      - name: 🧱 Prepare Superset source
+        id: setup
         uses: ./.github/actions/setup
 
-  docker-build:
-    name: 📦 Docker Build and Push
-    needs: checkout
-    runs-on: ubuntu-22.04
-    defaults:
-      run:
-        working-directory: ${{ needs.checkout.outputs.working-directory }}
-    if: ${{ github.event_name == 'push' }}
-    steps:
-      - name: Run Snapshot Docker Build/Push
-        # https://github.com/pagopa/github-actions-template/releases/tag/v2.0.0
-        uses: pagopa/github-actions-template/payments-flow-docker-snapshot@b825ee193430395706a4a7e580b8435bdded0227
+      - name: 🔨 Set Docker tag
+        id: set_docker_tag
+        shell: bash
+        run: |
+          SAFE_BRANCH=$(echo "${{ env.CURRENT_BRANCH }}" | tr '/' '-' | tr '[:upper:]' '[:lower:]')
+          echo "DOCKER_TAG=ghcr.io/${{ github.repository }}:${SAFE_BRANCH}-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: 🛃 Log in to the Github Container registry
+        # https://github.com/docker/login-action/releases/tag/v3.6.0
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef
         with:
-          current_branch: ${{ github.ref_name }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: 📦 Build and push snapshot Docker image
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: ${{ steps.setup.outputs.working-directory }}
+          target: lean
+          push: true
+          tags: ${{ steps.set_docker_tag.outputs.DOCKER_TAG }}
+          build-args: |
+            BUILD_TRANSLATIONS=true
+            PY_VER=3.12.13-slim-bookworm
+            INCLUDE_CHROMIUM=false

@@ -1,5 +1,8 @@
 build/
 
+### Superset build ###
+/.superset-build/
+
 ### STS ###
 .apt_generated
 .classpath

@@ -12,12 +12,9 @@ outputs:
 runs:
   using: composite
   steps:
-    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-      with:
-        node-version: 20.18.0
     - name: install
       shell: bash
       run: |
-        echo TODO
-        echo "SUPERSET_VERSION=TODO" >> $GITHUB_OUTPUT
-        echo "WORKING_DIRECTORY=$(pwd)" >> $GITHUB_OUTPUT
+        bash "$GITHUB_WORKSPACE/scripts/prepare-superset-source.sh"
+        echo "SUPERSET_VERSION=$(tr -d '[:space:]' < "$GITHUB_WORKSPACE/SUPERSET_VERSION")" >> "$GITHUB_OUTPUT"
+        echo "WORKING_DIRECTORY=$GITHUB_WORKSPACE/.superset-build" >> "$GITHUB_OUTPUT"

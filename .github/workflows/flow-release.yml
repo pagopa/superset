@@ -18,30 +18,33 @@ jobs:
     name: 🔖 Checkout Repository
     runs-on: ubuntu-22.04
     outputs:
-      working-directory: ${{ steps.setup.outputs.working-directory }}
-      superset-version: ${{ steps.setup.outputs.superset-version }}
+      superset-version: ${{ steps.version.outputs.superset-version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
         with:
           ref: ${{ github.ref_name }}
-      - id: setup
-        uses: ./.github/actions/setup
+      - name: Read pinned Superset version
+        id: version
+        shell: bash
+        run: echo "superset-version=$(tr -d '[:space:]' < SUPERSET_VERSION)" >> "$GITHUB_OUTPUT"
 
   payments-flow-release:
     name: 🚀 Release
     runs-on: ubuntu-22.04
     needs: checkout
-    defaults:
-      run:
-        working-directory: ${{ needs.checkout.outputs.working-directory }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
+        with:
+          ref: ${{ github.ref_name }}
+
       - name: 🔨 Set release tag format
         id: set-tag-format
         shell: bash
         run: |
           echo "TAG_FORMAT=${{ needs.checkout.outputs.superset-version }}_v\${version}" >> $GITHUB_OUTPUT
-          
+
       # Set the appropriate token
       - name: 🔐 Set GitHub Token
         id: set_token
@@ -64,9 +67,14 @@ jobs:
       #
       # Docker
       #
+      - name: 🧱 Prepare Superset source
+        id: setup
+        if: steps.release.outputs.new_release_published == 'true'
+        uses: ./.github/actions/setup
+
       - name: 🔨 Set Docker tags
         id: set_docker_tags
-        if: steps.release.outputs.new_release_published == 'true' && inputs.docker_build == 'true'
+        if: steps.release.outputs.new_release_published == 'true'
         shell: bash
         run: |
           # vx.y.z, latest
@@ -74,7 +82,7 @@ jobs:
 
       - name: 🛃 Log in to the Github Container registry
         id: docker_login
-        if: steps.release.outputs.new_release_published == 'true' && inputs.docker_build == 'true'
+        if: steps.release.outputs.new_release_published == 'true'
         # https://github.com/docker/login-action/releases/tag/v3.6.0
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef
         with:
@@ -84,14 +92,14 @@ jobs:
 
       - name: 📦 Build and push Docker image with release version
         id: docker_build_push
-        if: steps.release.outputs.new_release_published == 'true' && inputs.docker_build == 'true'
+        if: steps.release.outputs.new_release_published == 'true'
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
-          context: .
+          context: ${{ steps.setup.outputs.working-directory }}
+          target: lean
           push: true
           tags: ${{ steps.set_docker_tags.outputs.DOCKER_TAGS }}
-          labels: ${{ inputs.docker_labels }}
           build-args: |
-            GIT_AUTH_TOKEN=${{ steps.set_token.outputs.GIT_AUTH_TOKEN }}
-          secrets: |
-            GIT_AUTH_TOKEN=${{ steps.set_token.outputs.GIT_AUTH_TOKEN }}
+            BUILD_TRANSLATIONS=true
+            PY_VER=3.12.13-slim-bookworm
+            INCLUDE_CHROMIUM=false
