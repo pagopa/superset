@@ -13,6 +13,7 @@ runs:
   using: composite
   steps:
     - name: install
+      id: install
       shell: bash
       run: |
         bash "$GITHUB_WORKSPACE/scripts/prepare-superset-source.sh"
