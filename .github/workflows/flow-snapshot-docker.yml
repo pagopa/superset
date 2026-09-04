@@ -33,10 +33,13 @@ jobs:
       - name: Promote Superset source to workspace root
         # payments-flow-docker-snapshot builds from "." with no way to point it
         # at .superset-build, so the prepared source has to become the workspace root.
+        # .github is kept so the local ./.github/actions/setup action (its
+        # actions/setup-node post-step needs the action.yml on disk) can still
+        # run its post-job cleanup after this step.
         shell: bash
         run: |
           set -euo pipefail
-          find . -mindepth 1 -maxdepth 1 -not -name '.superset-build' -exec rm -rf {} +
+          find . -mindepth 1 -maxdepth 1 -not -name '.superset-build' -not -name '.github' -exec rm -rf {} +
           shopt -s dotglob
           mv .superset-build/* .
           rmdir .superset-build
