@@ -17,11 +17,10 @@ env:
   CURRENT_BRANCH: ${{ github.event.inputs.branch || github.ref_name }}
 
 jobs:
-  checkout:
-    name: 🔖 Checkout Repository and Setup
+  docker-build:
+    name: 📦 Docker Build and Push
     runs-on: ubuntu-22.04
-    outputs:
-      working-directory: ${{ steps.setup.outputs.working-directory }}
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
@@ -31,18 +30,42 @@ jobs:
       - id: setup
         uses: ./.github/actions/setup
 
-  docker-build:
-    name: 📦 Docker Build and Push
-    needs: checkout
-    runs-on: ubuntu-22.04
-    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
-    steps:
+      - name: Promote Superset source to workspace root
+        # payments-flow-docker-snapshot builds from "." with no way to point it
+        # at .superset-build, so the prepared source has to become the workspace root.
+        shell: bash
+        run: |
+          set -euo pipefail
+          find . -mindepth 1 -maxdepth 1 -not -name '.superset-build' -exec rm -rf {} +
+          shopt -s dotglob
+          mv .superset-build/* .
+          rmdir .superset-build
+
+      - name: Pin Dockerfile build config
+        # payments-flow-docker-snapshot only accepts current_branch/docker_labels
+        # (no build-args), so pin the required build config by rewriting the
+        # Dockerfile's own ARG defaults instead of passing --build-arg.
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          pin_arg() {
+            local name="$1" value="$2"
+            local count
+            count=$(grep -cE "^ARG ${name}=" Dockerfile)
+            if [ "${count}" -ne 1 ]; then
+              echo "::error::Expected exactly one 'ARG ${name}=' default in Dockerfile, found ${count}. Dockerfile may have changed upstream." >&2
+              exit 1
+            fi
+            sed -i -E "s|^ARG ${name}=.*|ARG ${name}=${value}|" Dockerfile
+          }
+
+          pin_arg PY_VER '3.12.13-slim-trixie'
+          pin_arg BUILD_TRANSLATIONS '"true"'
+          pin_arg INCLUDE_CHROMIUM '"false"'
+
       - name: Run Snapshot Docker Build/Push
         # https://github.com/pagopa/github-actions-template/releases/tag/v2.0.0
         uses: pagopa/github-actions-template/payments-flow-docker-snapshot@b825ee193430395706a4a7e580b8435bdded0227
         with:
           current_branch: ${{ github.ref_name }}
-          build-args: |
-            BUILD_TRANSLATIONS=true
-            PY_VER=3.12.13-slim-trixie
-            INCLUDE_CHROMIUM=false
