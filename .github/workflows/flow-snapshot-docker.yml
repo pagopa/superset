@@ -38,7 +38,7 @@ jobs:
     defaults:
       run:
         working-directory: ${{ needs.checkout.outputs.working-directory }}
-    if: ${{ github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Run Snapshot Docker Build/Push
         # https://github.com/pagopa/github-actions-template/releases/tag/v2.0.0
