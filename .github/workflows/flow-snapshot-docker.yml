@@ -35,9 +35,6 @@ jobs:
     name: 📦 Docker Build and Push
     needs: checkout
     runs-on: ubuntu-22.04
-    defaults:
-      run:
-        working-directory: ${{ needs.checkout.outputs.working-directory }}
     if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Run Snapshot Docker Build/Push
