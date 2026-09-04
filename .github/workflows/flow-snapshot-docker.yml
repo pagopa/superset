@@ -45,3 +45,7 @@ jobs:
         uses: pagopa/github-actions-template/payments-flow-docker-snapshot@b825ee193430395706a4a7e580b8435bdded0227
         with:
           current_branch: ${{ github.ref_name }}
+          build-args: |
+            BUILD_TRANSLATIONS=true
+            PY_VER=3.12.13-slim-trixie
+            INCLUDE_CHROMIUM=false
