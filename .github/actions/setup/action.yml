@@ -16,6 +16,7 @@ runs:
       with:
         node-version: 20.18.0
     - name: install
+      id: install
       shell: bash
       run: |
         bash scripts/prepare-superset-source.sh
