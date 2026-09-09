@@ -11,37 +11,39 @@ on:
       - '**.md'
       - '.**'
   workflow_dispatch:
+    inputs:
+      docker_build:
+        description: 'Build and push the Docker image for this release'
+        type: boolean
+        default: false
+      docker_labels:
+        description: 'Docker image labels (newline-separated key=value pairs)'
+        type: string
+        required: false
+      github_pat:
+        description: 'GitHub token to use instead of the default one'
+        type: string
+        required: false
 
 jobs:
-
-  checkout:
-    name: 🔖 Checkout Repository
-    runs-on: ubuntu-22.04
-    outputs:
-      working-directory: ${{ steps.setup.outputs.working-directory }}
-      superset-version: ${{ steps.setup.outputs.superset-version }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
-        with:
-          ref: ${{ github.ref_name }}
-      - id: setup
-        uses: ./.github/actions/setup
 
   payments-flow-release:
     name: 🚀 Release
     runs-on: ubuntu-22.04
-    needs: checkout
-    defaults:
-      run:
-        working-directory: ${{ needs.checkout.outputs.working-directory }}
     steps:
+      - name: Checkout code
+        # Lightweight checkout: only needed to read SUPERSET_VERSION below,
+        # before release-action runs its own full checkout (fetch-depth: 0).
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
+        with:
+          ref: ${{ github.ref_name }}
+
       - name: 🔨 Set release tag format
         id: set-tag-format
         shell: bash
         run: |
-          echo "TAG_FORMAT=${{ needs.checkout.outputs.superset-version }}_v\${version}" >> $GITHUB_OUTPUT
-          
+          echo "TAG_FORMAT=$(tr -d '[:space:]' < SUPERSET_VERSION)_v\${version}" >> $GITHUB_OUTPUT
+
       # Set the appropriate token
       - name: 🔐 Set GitHub Token
         id: set_token
@@ -64,9 +66,15 @@ jobs:
       #
       # Docker
       #
+      - id: setup
+        if: steps.release.outputs.new_release_published == 'true' && inputs.docker_build
+        # release-action's own checkout (fetch-depth: 0) leaves the repo in
+        # place, so this can clone the Superset source straight after it.
+        uses: ./.github/actions/setup
+
       - name: 🔨 Set Docker tags
         id: set_docker_tags
-        if: steps.release.outputs.new_release_published == 'true' && inputs.docker_build == 'true'
+        if: steps.release.outputs.new_release_published == 'true' && inputs.docker_build
         shell: bash
         run: |
           # vx.y.z, latest
@@ -74,7 +82,7 @@ jobs:
 
       - name: 🛃 Log in to the Github Container registry
         id: docker_login
-        if: steps.release.outputs.new_release_published == 'true' && inputs.docker_build == 'true'
+        if: steps.release.outputs.new_release_published == 'true' && inputs.docker_build
         # https://github.com/docker/login-action/releases/tag/v3.6.0
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef
         with:
@@ -84,14 +92,17 @@ jobs:
 
       - name: 📦 Build and push Docker image with release version
         id: docker_build_push
-        if: steps.release.outputs.new_release_published == 'true' && inputs.docker_build == 'true'
+        if: steps.release.outputs.new_release_published == 'true' && inputs.docker_build
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
-          context: .
+          context: ${{ steps.setup.outputs.working-directory }}
           push: true
           tags: ${{ steps.set_docker_tags.outputs.DOCKER_TAGS }}
           labels: ${{ inputs.docker_labels }}
           build-args: |
             GIT_AUTH_TOKEN=${{ steps.set_token.outputs.GIT_AUTH_TOKEN }}
+            BUILD_TRANSLATIONS=true
+            PY_VER=3.12.13-slim-trixie
+            INCLUDE_CHROMIUM=false
           secrets: |
             GIT_AUTH_TOKEN=${{ steps.set_token.outputs.GIT_AUTH_TOKEN }}
