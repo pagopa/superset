@@ -17,11 +17,10 @@ env:
   CURRENT_BRANCH: ${{ github.event.inputs.branch || github.ref_name }}
 
 jobs:
-  checkout:
-    name: 🔖 Checkout Repository and Setup
+  docker-build:
+    name: 📦 Docker Build and Push
     runs-on: ubuntu-22.04
-    outputs:
-      working-directory: ${{ steps.setup.outputs.working-directory }}
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
@@ -31,17 +30,39 @@ jobs:
       - id: setup
         uses: ./.github/actions/setup
 
-  docker-build:
-    name: 📦 Docker Build and Push
-    needs: checkout
-    runs-on: ubuntu-22.04
-    defaults:
-      run:
-        working-directory: ${{ needs.checkout.outputs.working-directory }}
-    if: ${{ github.event_name == 'push' }}
-    steps:
-      - name: Run Snapshot Docker Build/Push
-        # https://github.com/pagopa/github-actions-template/releases/tag/v2.0.0
-        uses: pagopa/github-actions-template/payments-flow-docker-snapshot@b825ee193430395706a4a7e580b8435bdded0227
+      - name: 🛃 Log in to the Github Container registry
+        # https://github.com/docker/login-action/releases/tag/v3.6.0
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567
         with:
-          current_branch: ${{ github.ref_name }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🤔 Set Docker tags
+        id: set_docker_tags
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "DOCKER_TAGS=ghcr.io/${{ github.repository }}:develop-latest,ghcr.io/${{ github.repository }}:snapshot,ghcr.io/${{ github.repository }}:snapshot-${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "DOCKER_TAGS=ghcr.io/${{ github.repository }}:snapshot,ghcr.io/${{ github.repository }}:snapshot-${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🚀 Build and push Docker image
+        # Inlined equivalent of pagopa/github-actions-template/payments-flow-docker-snapshot,
+        # since that action always builds from "." and doesn't accept build-args. Building
+        # directly here lets us point context at the prepared Superset source (.superset-build)
+        # without having to relocate it to the workspace root, and pass build-args natively.
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.18.0
+        with:
+          context: ${{ steps.setup.outputs.working-directory }}
+          push: true
+          tags: ${{ steps.set_docker_tags.outputs.DOCKER_TAGS }}
+          labels: |
+            maintainer=https://pagopa.it
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          build-args: |
+            BUILD_TRANSLATIONS=true
+            PY_VER=3.12.13-slim-trixie
+            INCLUDE_CHROMIUM=false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
