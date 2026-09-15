@@ -38,6 +38,7 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
           persist-credentials: false
+          fetch-depth: 0
 
       - name: 🔨 Set release tag format
         id: set-tag-format
