@@ -12,6 +12,10 @@ on:
       - '.**'
   workflow_dispatch:
 
+permissions:
+  packages: write
+  contents: write
+  
 env:
   # branch choosed by workflow_dispatch or by push event
   CURRENT_BRANCH: ${{ github.event.inputs.branch || github.ref_name }}
@@ -23,7 +27,7 @@ jobs:
     if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
         with:
           ref: ${{ env.CURRENT_BRANCH }}
 
@@ -32,7 +36,7 @@ jobs:
 
       - name: 🛃 Log in to the Github Container registry
         # https://github.com/docker/login-action/releases/tag/v3.6.0
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -53,7 +57,7 @@ jobs:
         # since that action always builds from "." and doesn't accept build-args. Building
         # directly here lets us point context at the prepared Superset source (.superset-build)
         # without having to relocate it to the workspace root, and pass build-args natively.
-        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.18.0
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           context: ${{ steps.setup.outputs.working-directory }}
           push: true

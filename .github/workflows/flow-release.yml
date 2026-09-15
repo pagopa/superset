@@ -20,10 +20,10 @@ on:
         description: 'Docker image labels (newline-separated key=value pairs)'
         type: string
         required: false
-      github_pat:
-        description: 'GitHub token to use instead of the default one'
-        type: string
-        required: false
+
+permissions:
+  packages: write
+  contents: write
 
 jobs:
 
@@ -34,7 +34,7 @@ jobs:
       - name: Checkout code
         # Lightweight checkout: only needed to read SUPERSET_VERSION below,
         # before release-action runs its own full checkout (fetch-depth: 0).
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
         with:
           ref: ${{ github.ref_name }}
 
@@ -43,7 +43,7 @@ jobs:
         shell: bash
         run: |
           echo "TAG_FORMAT=$(tr -d '[:space:]' < SUPERSET_VERSION)_v\${version}" >> $GITHUB_OUTPUT
-
+          
       # Set the appropriate token
       - name: 🔐 Set GitHub Token
         id: set_token
@@ -54,7 +54,7 @@ jobs:
           else
             echo "GIT_AUTH_TOKEN=${{ github.token }}" >> $GITHUB_OUTPUT
           fi
-
+          
       - name: 🚀 Release
         id: release
         uses: pagopa/eng-github-actions-iac-template/global/release-action@main
@@ -78,7 +78,7 @@ jobs:
         shell: bash
         run: |
           # vx.y.z, latest
-          echo "DOCKER_TAGS=ghcr.io/${{ github.repository }}:v${{ steps.release.outputs.new_release_version }}" >> $GITHUB_OUTPUT
+          echo "DOCKER_TAGS=ghcr.io/${{ github.repository }}:${{ steps.release.outputs.new_release_git_tag }}" >> $GITHUB_OUTPUT
 
       - name: 🛃 Log in to the Github Container registry
         id: docker_login
