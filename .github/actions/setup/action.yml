@@ -16,8 +16,9 @@ runs:
       with:
         node-version: 20.18.0
     - name: install
+      id: install
       shell: bash
       run: |
-        echo TODO
-        echo "SUPERSET_VERSION=TODO" >> $GITHUB_OUTPUT
-        echo "WORKING_DIRECTORY=$(pwd)" >> $GITHUB_OUTPUT
+        bash scripts/prepare-superset-source.sh
+        echo "SUPERSET_VERSION=$(tr -d '[:space:]' < SUPERSET_VERSION)" >> $GITHUB_OUTPUT
+        echo "WORKING_DIRECTORY=$(pwd)/.superset-build" >> $GITHUB_OUTPUT
