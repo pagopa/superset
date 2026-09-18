@@ -11,8 +11,11 @@ echo "Preparing Superset ${VERSION} in ${BUILD_DIR}"
 rm -rf "${BUILD_DIR}"
 git clone --branch "${VERSION}" --depth 1 https://github.com/apache/superset.git "${BUILD_DIR}"
 
-# Drop the clone's own .git
-rm -rf "${BUILD_DIR}/.git"
+# Drop every dot-directory from the clone (.git, .github, .devcontainer,
+# .storybook, etc.) — none of them are needed in the build context, and none
+# should be mistaken for this repo's own. Only directories are targeted, not
+# dotfiles.
+find "${BUILD_DIR}" -mindepth 1 -type d -name '.*' -prune -exec rm -rf {} +
 
 # A checkout on Windows (core.autocrlf=true) can turn LF-only shell scripts
 # into CRLF, breaking their shebang during the Docker build. No-op on Linux CI checkouts.
