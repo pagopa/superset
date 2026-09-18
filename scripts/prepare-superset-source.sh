@@ -21,4 +21,8 @@ find "${BUILD_DIR}" -type f -name '*.sh' -exec sed -i 's/\r$//' {} +
 cp "${REPO_ROOT}/custom_translations/messages.po" \
   "${BUILD_DIR}/superset/translations/it/LC_MESSAGES/messages.po"
 
+# Override the stock Dockerfile with the one maintained in this repo, which
+# carries the perl-base and linux-libc-dev CRITICAL CVE patches on top of it.
+cp "${REPO_ROOT}/Dockerfile" "${BUILD_DIR}/Dockerfile"
+
 echo "Superset source ready at ${BUILD_DIR}"

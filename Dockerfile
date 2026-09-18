@@ -203,6 +203,13 @@ RUN /app/docker/apt-install.sh \
       libecpg-dev \
       libldap2-dev
 
+# linux-libc-dev (kernel UAPI headers) is pulled in as a hard
+# dependency of libc6-dev, which the -dev packages above require. It carries
+# a CRITICAL CVE and is never needed at runtime (only for building things
+# against raw kernel headers), so purge it explicitly.
+RUN apt-get purge -y --auto-remove linux-libc-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # Create data directory for DuckDB examples database
 # The database file will be created at runtime when examples are loaded from Parquet files
 RUN mkdir -p /app/data && chown -R superset:superset /app/data
