@@ -1,0 +1,5 @@
+secrets:
+  - id: gcp-service-account
+    paths:
+      - "**/db_engine_specs/bigquery.py"
+      - "**/db_engine_specs/datastore.py"
