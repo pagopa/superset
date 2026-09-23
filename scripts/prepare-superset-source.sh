@@ -17,6 +17,13 @@ git clone --branch "${VERSION}" --depth 1 https://github.com/apache/superset.git
 # dotfiles.
 find "${BUILD_DIR}" -mindepth 1 -type d -name '.*' -prune -exec rm -rf {} +
 
+# Drop frontend test files (*.test.ts(x)/*.test.js(x)) — webpack.config.js
+# explicitly excludes them from both the production bundle and the TS
+# type-check, and no build stage ever runs jest/cypress inside the image.
+find "${BUILD_DIR}/superset-frontend" -type f \
+  \( -name '*.test.ts' -o -name '*.test.tsx' -o -name '*.test.js' -o -name '*.test.jsx' \) \
+  -delete
+
 # A checkout on Windows (core.autocrlf=true) can turn LF-only shell scripts
 # into CRLF, breaking their shebang during the Docker build. No-op on Linux CI checkouts.
 find "${BUILD_DIR}" -type f -name '*.sh' -exec sed -i 's/\r$//' {} +
