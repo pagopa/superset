@@ -1,4 +1,8 @@
 secrets:
+  # False positive: these files contain an example GCP service-account JSON
+  # config (e.g. "private_key": "...") used to document the expected
+  # credentials_info shape for the BigQuery/Datastore connectors, not a real
+  # secret.
   - id: gcp-service-account
     paths:
       - "**/db_engine_specs/bigquery.py"
