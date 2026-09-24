@@ -32,6 +32,6 @@ cp "${REPO_ROOT}/custom_translations/messages.po" \
   "${BUILD_DIR}/superset/translations/it/LC_MESSAGES/messages.po"
 
 # Patch the cloned Dockerfile to remediate known CVEs in the base image.
-"${REPO_ROOT}/scripts/fix_cve.sh" "${BUILD_DIR}"
+bash "${REPO_ROOT}/scripts/fix_cve.sh" "${BUILD_DIR}"
 
 echo "Superset source ready at ${BUILD_DIR}"
