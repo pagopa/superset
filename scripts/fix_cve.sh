@@ -28,6 +28,32 @@ insert_after() {
   rm -f "${patch_file}"
 }
 
+OS_HIGH_CVE_PATCH='
+# Patch util-linux, pcre2, sqlite3, libcap2 and gzip to pick up the
+# trixie-security fixes for their outstanding HIGH CVEs (util-linux:
+# CVE-2026-53612, CVE-2026-53613, CVE-2026-53614; pcre2: CVE-2026-86145,
+# CVE-2026-89157, CVE-2026-89161; sqlite3: CVE-2026-11822, CVE-2026-11824;
+# libcap2: CVE-2026-4878; gzip: CVE-2026-41992), which the base image still
+# ships unpatched.
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y --only-upgrade \
+      util-linux \
+      bsdutils \
+      libblkid1 \
+      libmount1 \
+      libsmartcols1 \
+      libuuid1 \
+      liblastlog2-2 \
+      login \
+      mount \
+      libpcre2-8-0 \
+      libsqlite3-0 \
+      libcap2 \
+      gzip && \
+    rm -rf /var/lib/apt/lists/*
+'
+insert_after 'FROM python:${PY_VER} AS python-base' "${OS_HIGH_CVE_PATCH}"
+
 PERL_BASE_PATCH='
 # Patch perl-base to pick up the trixie-security fix for CVE-2026-13221,
 # CVE-2026-42496 and CVE-2026-8376 (all CRITICAL), which the base image
@@ -47,3 +73,26 @@ RUN apt-get purge -y --auto-remove linux-libc-dev \
     && rm -rf /var/lib/apt/lists/*
 '
 insert_after '      libldap2-dev' "${LINUX_LIBC_DEV_PATCH}"
+
+PYTHON_HIGH_CVE_PATCH='
+# Bump Pillow, PyJWT, Mako, urllib3, pyasn1 and pyOpenSSL to pick up their
+# fixes for outstanding HIGH CVEs (Pillow: CVE-2026-40192, CVE-2026-25990,
+# CVE-2026-42311, CVE-2026-54058, CVE-2026-54059, CVE-2026-54060,
+# CVE-2026-55379, CVE-2026-55380, CVE-2026-59197, CVE-2026-59199,
+# CVE-2026-59200, CVE-2026-59204, CVE-2026-59205; PyJWT: CVE-2026-32597,
+# CVE-2026-48526; Mako: CVE-2026-41205, CVE-2026-44307; urllib3:
+# CVE-2026-44431, CVE-2026-44432; pyasn1: CVE-2026-59884, CVE-2026-30922,
+# CVE-2026-59885, CVE-2026-59886; pyOpenSSL: CVE-2026-27459). All six stay
+# within the version ranges declared by Superset (pyproject.toml) or by
+# their actual consumers (pyasn1-modules requires pyasn1<0.7.0,>=0.6.1;
+# shillelagh requires pyopenssl>=24.0.0), unlike cryptography/msgpack/
+# pyarrow which would need a major bump beyond those declared constraints.
+RUN uv pip install --upgrade \
+      "Pillow==12.3.0" \
+      "PyJWT==2.13.0" \
+      "Mako==1.3.12" \
+      "urllib3==2.7.0" \
+      "pyasn1==0.6.4" \
+      "pyOpenSSL==26.0.0"
+'
+insert_after '/app/docker/pip-install.sh --requires-build-essential -r requirements/base.txt' "${PYTHON_HIGH_CVE_PATCH}"
