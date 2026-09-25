@@ -9,11 +9,10 @@ secrets:
       - "**/db_engine_specs/datastore.py"
 
 vulnerabilities:
-  # wheel and jaraco.context are not standalone installed packages in this
-  # image: both only appear as copies vendored inside setuptools/_vendor/
-  # (setuptools' own bundled build tooling), never imported or executed by
-  # Superset at runtime. Upgrading the top-level wheel/jaraco.context
-  # packages does not touch these vendored copies, so there is no
-  # actionable pip-level fix here.
-  - id: CVE-2026-24049 # wheel, vendored inside setuptools/_vendor
-  - id: CVE-2026-23949 # jaraco.context, vendored inside setuptools/_vendor
+  # False positive for pyarrow: the flaw is in Apache Arrow C++ and is only
+  # reachable by enabling pre-buffering through the C++ API call
+  # RecordBatchFileReader::PreBufferMetadata. The Apache Security Team states
+  # in the advisory: "The functionality is not exposed in language bindings
+  # (Python, Ruby, C GLib), so these bindings are not vulnerable."
+  # Source: https://www.openwall.com/lists/oss-security/2026/02/17/4
+  - id: CVE-2026-25087

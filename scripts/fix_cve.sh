@@ -29,9 +29,9 @@ insert_after() {
 }
 
 OS_HIGH_CVE_PATCH='
-# Patch util-linux, pcre2, sqlite3, libcap2 and gzip to pick up the
-# trixie-security fixes for their outstanding HIGH CVEs, which the base image still
-# ships unpatched.
+# Patch util-linux, pcre2, sqlite3, libcap2, gzip and perl-base to pick up
+# the trixie-security fixes for their outstanding HIGH and CRITICAL CVEs,
+# which the base image still ships unpatched.
 RUN apt-get update && \
     apt-get install --no-install-recommends -y --only-upgrade \
       util-linux \
@@ -46,20 +46,13 @@ RUN apt-get update && \
       libpcre2-8-0 \
       libsqlite3-0 \
       libcap2 \
-      gzip && \
+      gzip \
+# Patch perl-base to pick up the trixie-security fix for CVE-2026-13221,
+# CVE-2026-42496 and CVE-2026-8376 (all CRITICAL)
+      perl-base && \
     rm -rf /var/lib/apt/lists/*
 '
 insert_after 'FROM python:${PY_VER} AS python-base' "${OS_HIGH_CVE_PATCH}"
-
-PERL_BASE_PATCH='
-# Patch perl-base to pick up the trixie-security fix for CVE-2026-13221,
-# CVE-2026-42496 and CVE-2026-8376 (all CRITICAL), which the base image
-# still ships unpatched.
-RUN apt-get update && \
-    apt-get install --no-install-recommends -y --only-upgrade perl-base && \
-    rm -rf /var/lib/apt/lists/*
-'
-insert_after 'FROM python:${PY_VER} AS python-base' "${PERL_BASE_PATCH}"
 
 LINUX_LIBC_DEV_PATCH='
 # linux-libc-dev (kernel UAPI headers) is pulled in as a hard
