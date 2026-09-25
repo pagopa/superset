@@ -1,0 +1,18 @@
+secrets:
+  # False positive: these files contain an example GCP service-account JSON
+  # config (e.g. "private_key": "...") used to document the expected
+  # credentials_info shape for the BigQuery/Datastore connectors, not a real
+  # secret.
+  - id: gcp-service-account
+    paths:
+      - "**/db_engine_specs/bigquery.py"
+      - "**/db_engine_specs/datastore.py"
+
+vulnerabilities:
+  # False positive for pyarrow: the flaw is in Apache Arrow C++ and is only
+  # reachable by enabling pre-buffering through the C++ API call
+  # RecordBatchFileReader::PreBufferMetadata. The Apache Security Team states
+  # in the advisory: "The functionality is not exposed in language bindings
+  # (Python, Ruby, C GLib), so these bindings are not vulnerable."
+  # Source: https://www.openwall.com/lists/oss-security/2026/02/17/4
+  - id: CVE-2026-25087
