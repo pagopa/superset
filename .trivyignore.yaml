@@ -9,7 +9,7 @@ secrets:
       - "**/db_engine_specs/datastore.py"
 
 vulnerabilities:
-  # False positive for pyarrow: the flaw is in Apache Arrow C++ and is only
+  # False positive for pyarrow: the vulnerability is in Apache Arrow C++ and is only
   # reachable by enabling pre-buffering through the C++ API call
   # RecordBatchFileReader::PreBufferMetadata. The Apache Security Team states
   # in the advisory: "The functionality is not exposed in language bindings
