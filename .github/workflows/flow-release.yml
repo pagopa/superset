@@ -15,7 +15,7 @@ on:
       docker_build:
         description: 'Build and push the Docker image for this release'
         type: boolean
-        default: false
+        default: true
       docker_labels:
         description: 'Docker image labels (newline-separated key=value pairs)'
         type: string
