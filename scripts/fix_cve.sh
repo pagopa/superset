@@ -73,7 +73,7 @@ PYTHON_HIGH_CVE_PATCH='
 # by Superset (pyproject.toml) or by their actual consumers.
 RUN uv pip install --upgrade \
       "Pillow==12.3.0" \
-      "PyJWT==2.14.0" \
+      "PyJWT==2.15.1" \
       "Mako==1.3.12" \
       "urllib3==2.8.0" \
       "pyasn1==0.6.4" \
