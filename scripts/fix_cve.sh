@@ -29,7 +29,7 @@ insert_after() {
 }
 
 OS_HIGH_CVE_PATCH='
-# Patch util-linux, pcre2, sqlite3, libcap2, gzip and perl-base to pick up
+# Patch util-linux, pcre2, sqlite3, libcap2, gzip, openssl and perl-base to pick up
 # the trixie-security fixes for their outstanding HIGH and CRITICAL CVEs,
 # which the base image still ships unpatched.
 RUN apt-get update && \
@@ -47,6 +47,9 @@ RUN apt-get update && \
       libsqlite3-0 \
       libcap2 \
       gzip \
+      openssl \
+      libssl3t64 \
+      openssl-provider-legacy \
 # Patch perl-base to pick up the trixie-security fix for CVE-2026-13221,
 # CVE-2026-42496 and CVE-2026-8376 (all CRITICAL)
       perl-base && \
@@ -66,13 +69,13 @@ insert_after '      libldap2-dev' "${LINUX_LIBC_DEV_PATCH}"
 
 PYTHON_HIGH_CVE_PATCH='
 # Bump Pillow, PyJWT, Mako, urllib3, pyasn1 and pyOpenSSL to pick up their
-# fixes for outstanding HIGH CVEs. All six stay within the version ranges declared 
+# fixes for outstanding HIGH CVEs. All six stay within the version ranges declared
 # by Superset (pyproject.toml) or by their actual consumers.
 RUN uv pip install --upgrade \
       "Pillow==12.3.0" \
-      "PyJWT==2.13.0" \
+      "PyJWT==2.15.1" \
       "Mako==1.3.12" \
-      "urllib3==2.7.0" \
+      "urllib3==2.8.0" \
       "pyasn1==0.6.4" \
       "pyOpenSSL==26.0.0"
 '
