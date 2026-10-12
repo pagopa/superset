@@ -57,6 +57,14 @@ RUN apt-get update && \
 '
 insert_after 'FROM python:${PY_VER} AS python-base' "${OS_HIGH_CVE_PATCH}"
 
+SYSTEM_PYTHON_CVE_PATCH='
+# Bump setuptools and wheel in the system Python: setuptools 80.10.2 vendors
+# wheel 0.46.3 and jaraco.context 6.1.0, fixing CVE-2026-24049 and
+# CVE-2026-23949; the standalone wheel package comes from the base image.
+RUN pip install --no-cache-dir --upgrade "setuptools==80.10.2" "wheel==0.46.3"
+'
+insert_after 'RUN pip install --no-cache-dir --upgrade uv' "${SYSTEM_PYTHON_CVE_PATCH}"
+
 LINUX_LIBC_DEV_PATCH='
 # linux-libc-dev (kernel UAPI headers) is pulled in as a hard
 # dependency of libc6-dev, which the -dev packages above require. It carries
@@ -67,15 +75,16 @@ RUN apt-get purge -y --auto-remove linux-libc-dev \
 insert_after '      libldap2-dev' "${LINUX_LIBC_DEV_PATCH}"
 
 PYTHON_HIGH_CVE_PATCH='
-# Bump Pillow, PyJWT, Mako, urllib3, pyasn1 and pyOpenSSL to pick up their
-# fixes for outstanding HIGH CVEs. All six stay within the version ranges declared
-# by Superset (pyproject.toml) or by their actual consumers.
+# Bump Pillow, PyJWT, Mako, urllib3, pyasn1, pyOpenSSL and setuptools to pick
+# up their fixes for outstanding HIGH CVEs. All of them stay within the version
+# ranges declared by Superset (pyproject.toml) or by their actual consumers.
 RUN uv pip install --upgrade \
       "Pillow==12.3.0" \
       "PyJWT==2.15.1" \
       "Mako==1.3.12" \
       "urllib3==2.8.0" \
       "pyasn1==0.6.4" \
-      "pyOpenSSL==26.0.0"
+      "pyOpenSSL==26.0.0" \
+      "setuptools==80.10.2"
 '
 insert_after '/app/docker/pip-install.sh --requires-build-essential -r requirements/base.txt' "${PYTHON_HIGH_CVE_PATCH}"
