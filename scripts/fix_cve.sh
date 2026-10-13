@@ -29,7 +29,7 @@ insert_after() {
 }
 
 OS_HIGH_CVE_PATCH='
-# Patch util-linux, pcre2, sqlite3, libcap2, gzip and perl-base to pick up
+# Patch util-linux, pcre2, sqlite3, libcap2, gzip, openssl and perl-base to pick up
 # the trixie-security fixes for their outstanding HIGH and CRITICAL CVEs,
 # which the base image still ships unpatched.
 RUN apt-get update && \
@@ -47,6 +47,9 @@ RUN apt-get update && \
       libsqlite3-0 \
       libcap2 \
       gzip \
+      openssl \
+      libssl3t64 \
+      openssl-provider-legacy \
 # Patch perl-base to pick up the trixie-security fix for CVE-2026-13221,
 # CVE-2026-42496 and CVE-2026-8376 (all CRITICAL)
       perl-base && \
@@ -54,26 +57,34 @@ RUN apt-get update && \
 '
 insert_after 'FROM python:${PY_VER} AS python-base' "${OS_HIGH_CVE_PATCH}"
 
+SYSTEM_PYTHON_CVE_PATCH='
+# Bump setuptools and wheel in the system Python: setuptools 80.10.2 vendors
+# wheel 0.46.3 and jaraco.context 6.1.0, fixing CVE-2026-24049 and
+# CVE-2026-23949; the standalone wheel package comes from the base image.
+RUN pip install --no-cache-dir --upgrade "setuptools==80.10.2" "wheel==0.46.3"
+'
+insert_after 'RUN pip install --no-cache-dir --upgrade uv' "${SYSTEM_PYTHON_CVE_PATCH}"
+
 LINUX_LIBC_DEV_PATCH='
 # linux-libc-dev (kernel UAPI headers) is pulled in as a hard
 # dependency of libc6-dev, which the -dev packages above require. It carries
-# a CRITICAL CVE and is never needed at runtime (only for building things
-# against raw kernel headers), so purge it explicitly.
+# a CRITICAL CVE and is never needed at runtime , so purge it explicitly.
 RUN apt-get purge -y --auto-remove linux-libc-dev \
     && rm -rf /var/lib/apt/lists/*
 '
 insert_after '      libldap2-dev' "${LINUX_LIBC_DEV_PATCH}"
 
 PYTHON_HIGH_CVE_PATCH='
-# Bump Pillow, PyJWT, Mako, urllib3, pyasn1 and pyOpenSSL to pick up their
-# fixes for outstanding HIGH CVEs. All six stay within the version ranges declared 
-# by Superset (pyproject.toml) or by their actual consumers.
+# Bump Pillow, PyJWT, Mako, urllib3, pyasn1, pyOpenSSL and setuptools to pick
+# up their fixes for outstanding HIGH CVEs. All of them stay within the version
+# ranges declared by Superset (pyproject.toml) or by their actual consumers.
 RUN uv pip install --upgrade \
       "Pillow==12.3.0" \
-      "PyJWT==2.13.0" \
+      "PyJWT==2.15.1" \
       "Mako==1.3.12" \
-      "urllib3==2.7.0" \
+      "urllib3==2.8.0" \
       "pyasn1==0.6.4" \
-      "pyOpenSSL==26.0.0"
+      "pyOpenSSL==26.0.0" \
+      "setuptools==80.10.2"
 '
 insert_after '/app/docker/pip-install.sh --requires-build-essential -r requirements/base.txt' "${PYTHON_HIGH_CVE_PATCH}"
