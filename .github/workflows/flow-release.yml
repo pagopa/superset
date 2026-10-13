@@ -12,10 +12,6 @@ on:
       - '.**'
   workflow_dispatch:
     inputs:
-      docker_build:
-        description: 'Build and push the Docker image for this release'
-        type: boolean
-        default: true
       docker_labels:
         description: 'Docker image labels (newline-separated key=value pairs)'
         type: string
@@ -57,9 +53,6 @@ jobs:
             echo "GIT_AUTH_TOKEN=${{ github.token }}" >> $GITHUB_OUTPUT
           fi
           
-          
-          echo "PROVA '${{ inputs.docker_build }}'"
-          
       - name: 🚀 Release
         id: release
         uses: pagopa/eng-github-actions-iac-template/global/release-action@main
@@ -72,14 +65,14 @@ jobs:
       # Docker
       #
       - id: setup
-        if: ${{ steps.release.outputs.new_release_published == 'true' && inputs.docker_build }}
+        if: ${{ steps.release.outputs.new_release_published == 'true' }}
         # release-action's own checkout (fetch-depth: 0) leaves the repo in
         # place, so this can clone the Superset source straight after it.
         uses: ./.github/actions/setup
 
       - name: 🔨 Set Docker tags
         id: set_docker_tags
-        if: ${{ steps.release.outputs.new_release_published == 'true' && inputs.docker_build }}
+        if: ${{ steps.release.outputs.new_release_published == 'true' }}
         shell: bash
         run: |
           # vx.y.z, latest
@@ -87,7 +80,7 @@ jobs:
 
       - name: 🛃 Log in to the Github Container registry
         id: docker_login
-        if: ${{ steps.release.outputs.new_release_published == 'true' && inputs.docker_build }}
+        if: ${{ steps.release.outputs.new_release_published == 'true' }}
         # https://github.com/docker/login-action/releases/tag/v3.6.0
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef
         with:
@@ -97,7 +90,7 @@ jobs:
 
       - name: 📦 Build and push Docker image with release version
         id: docker_build_push
-        if: ${{ steps.release.outputs.new_release_published == 'true' && inputs.docker_build }}
+        if: ${{ steps.release.outputs.new_release_published == 'true' }}
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           context: ${{ steps.setup.outputs.working-directory }}
