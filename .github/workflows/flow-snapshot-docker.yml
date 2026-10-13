@@ -67,6 +67,6 @@ jobs:
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
           build-args: |
             BUILD_TRANSLATIONS=true
-            PY_VER=3.12.13-slim-trixie
+            PY_VER=${{ steps.setup.outputs.py-version }}
             INCLUDE_CHROMIUM=false
           github-token: ${{ secrets.GITHUB_TOKEN }}

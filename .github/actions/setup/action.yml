@@ -8,6 +8,9 @@ outputs:
   superset-version:
     description: 'The version of Superset that is setup'
     value: ${{ steps.install.outputs.SUPERSET_VERSION }}
+  py-version:
+    description: 'The python base image tag (PY_VER build-arg) used to build Superset'
+    value: ${{ steps.install.outputs.PY_VERSION }}
 
 runs:
   using: composite
@@ -21,4 +24,5 @@ runs:
       run: |
         bash scripts/prepare-superset-source.sh
         echo "SUPERSET_VERSION=$(tr -d '[:space:]' < SUPERSET_VERSION)" >> $GITHUB_OUTPUT
+        echo "PY_VERSION=$(tr -d '[:space:]' < PY_VERSION)" >> $GITHUB_OUTPUT
         echo "WORKING_DIRECTORY=$(pwd)/.superset-build" >> $GITHUB_OUTPUT

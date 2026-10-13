@@ -104,7 +104,7 @@ jobs:
           build-args: |
             GIT_AUTH_TOKEN=${{ steps.set_token.outputs.GIT_AUTH_TOKEN }}
             BUILD_TRANSLATIONS=true
-            PY_VER=3.12.13-slim-trixie
+            PY_VER=${{ steps.setup.outputs.py-version }}
             INCLUDE_CHROMIUM=false
           secrets: |
             GIT_AUTH_TOKEN=${{ steps.set_token.outputs.GIT_AUTH_TOKEN }}
